@@ -19,6 +19,7 @@ library(readr)
 library(dplyr)
 library(ggplot2)
 library(ggthemes)
+library(forcats)
 ```
 
 ## Import
@@ -76,6 +77,7 @@ sanitation_SLE <- sanitation |>
   filter(iso3 == "SLE",
          year %in% c(2000, 2020),
          varname_short!= "san_sm")
+#or year == 2000 | year == 2020
 ```
 
 ## Task 4
@@ -85,6 +87,7 @@ sanitation_SLE <- sanitation |>
 ```{r}
 sanitation_SLE |> 
   count(year)
+#more useful to count with multiple variables to get more detail, e.g. count(iso3, year, varname_short)
 ```
 
 ## Task 5
@@ -131,6 +134,42 @@ If you haven't worked with JMP indicators before, the following questions will b
     -   **Order by step on sanitation ladder, with unimproved at the bottom**
 3.  Why did we remove "safely managed sanitation services" from the data set in Task 3?
     -   **Not 100% sure - the rationale could be that the graph helps highlight the status of people who do not have access to SM sanitation - so gives an indication of the progress which is needed to reach SDG 6.2. But for me the current graph is potentially misleading - could be seen as 0% safely managed sanitation.**
+    -   **From course:** Also because basic = 'at least basic' therefore includes SM. Adding SM would total over 100%.
+
+```{r}
+#from course to reorder legend and series
+levels_varname_short <- c("san_od","san_unimp", "san_lim", "san_bas", "san_sm")
+
+levels_varname_long <- c("no sanitation facilities", 
+                         "unimproved sanitation facilities",
+                         "limited sanitation services",
+                         "basic sanitation services",
+                         "safely managed sanitation services")
+
+sanitation_lvl <- sanitation |> 
+  mutate(varname_long= fct_rev(factor(varname_long, levels_varname_long)),
+         varname_short = fct_rev(factor(varname_short, levels_varname_short)),
+         residence = factor(residence, levels = c("rural", "urban", "national")))
+
+#fct_rev to ensure no sanitation is plotted at the bottom
+
+sanitation_SLE_lvl <- sanitation_lvl |> 
+  filter(iso3 == "SLE",
+         year %in% c(2000, 2020),
+         varname_short!= "san_sm")
+
+ggplot(data = sanitation_SLE_lvl,
+       mapping = aes(x = residence,
+                     y = percent,
+                     fill = varname_long)) +
+  geom_col() +
+  facet_wrap(~year) +
+  scale_fill_colorblind() +
+  geom_text(aes(label = round(percent, 1)), 
+            position = position_stack(vjust = 0.5),
+            size = 3,
+            color = "white") 
+```
 
 ## Task 7
 
